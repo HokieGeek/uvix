@@ -4,7 +4,6 @@ endif
 let g:autoloaded_uvix = 1
 
 function! uvix#find(...) " {{{
-    " TODO: bang doesn't pop cwindow?
     if a:0 == 1
         let l:loc = "."
         let l:name = a:1
@@ -18,7 +17,7 @@ function! uvix#find(...) " {{{
         return
     endif
 
-    if !exists(l:name)
+    if exists("l:name")
         let l:files_list = tempname()
         call system("find ".l:loc." -name '".l:name."' | xargs file | sed 's/:/:1:/' > ".l:files_list)
         let l:ef=&errorformat
@@ -31,7 +30,7 @@ endfunction " }}}
 function! uvix#chmod(bang, ...) " {{{
     if a:0 > 0
         let l:op = a:bang ? "+x" : a:1
-        let l:file = (a:0 > 1) ? bufname(a:2) : expand("%")
+        let l:file = (a:0 > 1) ? bufname(a:2) : expand("%:p")
         call system("chmod ".l:op." ".l:file)
         if a:0 == 1
             edit
@@ -43,19 +42,17 @@ function! uvix#chmod(bang, ...) " {{{
     endif
 endfunction " }}}
 function! uvix#remove(...) " {{{
-    let l:file = (a:0 > 0) ? bufname(a:1) : expand("%")
+    let l:file = (a:0 > 0) ? bufname(a:1) : expand("%:p")
     let l:file_path = fnamemodify(l:file, ":p")
     call delete(l:file_path)
     if filereadable(l:file_path)
-        echohl WarningMsg
-        echomsg "File was not deleted!"
-        echohl None
-        " TODO: ask user if they still want to delete the buffer
-    else
-        execute "bdelete! ".l:file
+        if confirm("File was not deleted. Still want to delete the buffer?", "y\nN", 2) == 1
+            execute "bdelete! ".l:file
+        endif
     endif
 endfunction " }}}
 function! uvix#tail(spawn, file) " {{{
+    let l:file = ""
     if exists("b:uvix__last_tail")
         let l:file = b:uvix__last_tail
     endif
@@ -65,25 +62,19 @@ function! uvix#tail(spawn, file) " {{{
         let b:uvix__last_tail = l:file
     endif
 
-    if exists("l:file")
-        let l:cmd = "tail -F ".l:file
-
-        if a:spawn
-            call splitter#LaunchCommandInNewTerminal("", l:cmd)
-        else
-            call splitter#LaunchCommandHere(l:cmd, 0)
-        endif
-        " TODO
-        " let l:cfg = {'terminal': a:spawn, 'split': !a:spawn, 'vertical':1}
-        " function! splitter#LaunchCommand("", cmd, l:cfg)
-    else
-        echohl WarningMsg
-        echomsg "You must specify a file"
-        echohl None
+    if strlen(l:file) <= 0
+        let l:file = expand("%:p")
     endif
-endfunction " }}}
-function! uvix#man(spawn, keyword) " {{{
+
+    let l:cmd = "tail -F ".l:file
+    if a:spawn
+        call splitter#LaunchCommandInNewTerminal("", l:cmd)
+    else
+        call splitter#LaunchCommandHere(l:cmd, 0)
+    endif
     " TODO
+    " let l:cfg = {'terminal': a:spawn, 'split': !a:spawn, 'vertical':1}
+    " function! splitter#LaunchCommand("", cmd, l:cfg)
 endfunction " }}}
 
 " vim: set foldmarker={{{,}}} foldmethod=marker formatoptions-=tc:
