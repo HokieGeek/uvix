@@ -3,7 +3,7 @@ if exists("g:autoloaded_uvix") || v:version < 700
 endif
 let g:autoloaded_uvix = 1
 
-function! uvix#find(...) " {{{
+function! uvix#find(case_sensitivity, ...) " {{{
     if a:0 == 1
         let l:loc = "."
         let l:name = a:1
@@ -12,14 +12,16 @@ function! uvix#find(...) " {{{
         let l:name = a:2
     else
         echohl WarningMsg
-        echomsg "Too many arguments. USAGE: Find [LOCATION] [FILE]"
+        echomsg "Too many arguments. USAGE: Find[!] [LOCATION] [FILE]"
         echohl None
         return
     endif
 
     if exists("l:name")
+        let l:case = a:case_sensitivity ? "" : "i"
         let l:files_list = tempname()
-        call system("find ".l:loc." -name '".l:name."' | xargs file | sed 's/:/:1:/' > ".l:files_list)
+        let l:cmd = "find ".l:loc." -".l:case."name '".l:name."' | xargs file | sed 's/:/:1:/' > ".l:files_list
+        call system(l:cmd)
         let l:ef=&errorformat
         set errorformat=%f:%l:%m
         execute "cfile ".l:files_list
@@ -27,9 +29,9 @@ function! uvix#find(...) " {{{
         cwindow
     endif
 endfunction " }}}
-function! uvix#chmod(bang, ...) " {{{
+function! uvix#chmod(default_op, ...) " {{{
     if a:0 > 0
-        let l:op = a:bang ? "+x" : a:1
+        let l:op = a:default_op ? "+x" : a:1
         let l:file = (a:0 > 1) ? bufname(a:2) : expand("%:p")
         call system("chmod ".l:op." ".l:file)
         if a:0 == 1
