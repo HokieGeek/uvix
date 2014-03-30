@@ -47,11 +47,10 @@ function! uvix#remove(...) " {{{
     let l:file = (a:0 > 0) ? bufname(a:1) : expand("%:p")
     let l:file_path = fnamemodify(l:file, ":p")
     call delete(l:file_path)
-    if filereadable(l:file_path)
-        if confirm("File was not deleted. Still want to delete the buffer?", "y\nN", 2) == 1
-            execute "bdelete! ".l:file
-        endif
+    if filereadable(l:file_path) && confirm("File was not deleted. Still want to delete the buffer?", "y\nN", 2) == 2
+        return
     endif
+    execute "bdelete! ".l:file
 endfunction " }}}
 function! uvix#tail(spawn, file) " {{{
     let l:file = ""
