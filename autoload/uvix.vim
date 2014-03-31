@@ -30,18 +30,17 @@ function! uvix#find(case_sensitivity, ...) " {{{
     endif
 endfunction " }}}
 function! uvix#chmod(default_op, ...) " {{{
-    if a:0 > 0
+    if a:0 > 0 || a:default_op
         let l:op = a:default_op ? "+x" : a:1
         let l:file = (a:0 > 1) ? bufname(a:2) : expand("%:p")
         call system("chmod ".l:op." ".l:file)
         if a:0 == 1
             edit
         endif
-    else
-        let l:sed = "'s;.*(\\([0-9]\\{4\\}\\/[-rwx]*\\)).*;\\1;' -e 's/\\([0-9]*\\).\\(.*\\)/\\2 (\\1)/'"
-        let l:perms = split(system("stat ".expand("%:p")." | grep 'Access:' | head -1 | sed -e ".l:sed), '\n')[0]
-        echomsg l:perms
     endif
+    let l:sed = "'s;.*(\\([0-9]\\{4\\}\\/[-rwx]*\\)).*;\\1;' -e 's/\\([0-9]*\\).\\(.*\\)/\\2 (\\1)/'"
+    let l:perms = split(system("stat ".expand("%:p")." | grep 'Access:' | head -1 | sed -e ".l:sed), '\n')[0]
+    echomsg l:perms
 endfunction " }}}
 function! uvix#remove(...) " {{{
     let l:file = (a:0 > 0) ? bufname(a:1) : expand("%:p")
@@ -68,14 +67,14 @@ function! uvix#tail(spawn, file) " {{{
     endif
 
     let l:cmd = "tail -F ".l:file
-    if a:spawn
-        call splitter#LaunchCommandInNewTerminal("", l:cmd)
-    else
-        call splitter#LaunchCommandHere(l:cmd, 0)
-    endif
-    " TODO
-    " let l:cfg = {'terminal': a:spawn, 'split': !a:spawn, 'vertical':1}
-    " function! splitter#LaunchCommand("", cmd, l:cfg)
+    " if a:spawn
+        " call splitter#LaunchCommandInNewTerminal("", l:cmd)
+    " else
+        " call splitter#LaunchCommandHere(l:cmd, 0)
+    " endif
+    let l:cfg = {'new_terminal': a:spawn, 'split': !a:spawn, 'split_orientation': 'vertical', 'split_size': -1}
+    " echomsg "Tail: ".l:cmd." || ".string(l:cfg)
+    call splitter#LaunchCommand("", l:cmd, l:cfg)
 endfunction " }}}
 
 " vim: set foldmarker={{{,}}} foldmethod=marker formatoptions-=tc:
