@@ -3,28 +3,31 @@ if exists("g:autoloaded_uvix") || v:version < 700
 endif
 let g:autoloaded_uvix = 1
 
-function! uvix#init() " {{{
-    " Determine which search tool to use
-    if executable('ag')
-        set grepprg=ag\ --nogroup\ --nocolor\ --column
-        set grepformat="%f:%l:%c:%m"
-        let l:use_external_proc = 1
-    elseif executable('ack')
-        set grepprg=ack\ --nogroup\ ---nocolor\ --column
-        set grepformat="%f:%l:%c:%m"
-        let l:use_external_proc = 1
-    elseif executable('grep')
-        set grepprg=grep\ -rnIH
-        let l:use_external_proc = 1
-    else
-        let l:use_external_proc = 0
+" Helpers {{{
+function! uvix#GetExternalGrepCmd() " {{{
+    if !exists("g:uvix_external_grep_cmd")
+        " Determine which search tool to use
+        if executable('ag')
+            set grepprg=ag\ --nogroup\ --nocolor\ --column
+            set grepformat="%f:%l:%c:%m"
+            let l:use_external_proc = 1
+        elseif executable('ack')
+            set grepprg=ack\ --nogroup\ ---nocolor\ --column
+            set grepformat="%f:%l:%c:%m"
+            let l:use_external_proc = 1
+        elseif executable('grep')
+            set grepprg=grep\ -rnIH
+            let l:use_external_proc = 1
+        else
+            let l:use_external_proc = 0
+        endif
+
+        let g:uvix_external_grep_cmd = (l:use_external_proc) ? "silent grep" : "noautocmd vimgrep"
     endif
-
-    let g:uvix_external_grep_cmd = (l:use_external_proc) ? "silent grep" : "noautocmd vimgrep"
-
-    let g:uvix_initialized = 1
+    return g:uvix_external_grep_cmd
 endfunction " }}}
-
+" }}}
+" Commands {{{
 function! uvix#find(case_sensitivity, ...) " {{{
     if a:0 == 1
         let l:loc = "."
@@ -99,17 +102,14 @@ function! uvix#tail(spawn, file) " {{{
     call splitter#LaunchCommand("", l:cmd, l:cfg)
 endfunction " }}}
 function! uvix#grep(...)
-    if !exists("g:uvix_initialized")
-        call uvix#init()
-    endif
-
     let l:args = a:000[:]
     let l:grep_cmd = "vimgrep"
     let l:path = "%"
 
-    if len(l:args) > 0
+    " Parse out switches from arguments
+    if len(l:args) > 1
         if a:1 == "-a"
-            let l:grep_cmd = g:uvix_external_grep_cmd
+            let l:grep_cmd = uvix#GetExternalGrepCmd()
             if l:grep_cmd =~? "vimgrep"
                 let l:path = "**"
             elseif l:grep_cmd =~? " grep"
@@ -117,30 +117,44 @@ function! uvix#grep(...)
             else
                 let l:path = ""
             endif
+
+            " Determine if case should be ignored
+            if &ignorecase
+                let l:grep_cmd .= " -i"
+            endif
+
             let l:args = a:000[1:]
         elseif a:1 == "-b"
             let l:grep_cmd = "cexpr [] <bar> bufdo vimgrepadd"
+
             let l:args = a:000[1:]
         endif
     endif
 
-    let l:expression = (len(l:args) > 0) ? join(l:args, ' ') : expand("<cword>")
-    if strlen(l:expression) > 0
-        if l:grep_cmd =~? "vimgrep"
-            let l:expression = "/".l:expression."/"
-        endif
-
-        silent! execute l:grep_cmd." ".l:expression." ".l:path
-        if empty(getqflist())
-            echomsg "No matches"
-        elseif len(getqflist()) > 1
-            cwindow
-        endif
+    " Parse out the rest of the arguments (or use current word as expression)
+    if empty(l:args)
+        " let l:expression = "\<".expand("<cword>")."\>"
+        let l:expression = expand("<cword>")
     else
-        echohl WarningMsg
-        echomsg "A search term is required"
-        echohl None
+        let l:expression = l:args[0]
+        if len(l:args) > 1
+            let l:path = l:args[1]
+        endif
+    endif
+
+    " If internal grep is being used, then need the correct expression notation
+    if l:grep_cmd =~? "vimgrep"
+        let l:expression = "/".l:expression."/"
+    endif
+
+    " Execute the search and display the qf list if there is more than 1 hit
+    silent! execute l:grep_cmd." ".l:expression." ".l:path
+    if empty(getqflist())
+        echomsg "No matches"
+    elseif len(getqflist()) > 1
+        cwindow
     endif
 endfunction
+" }}}
 
 " vim: set foldmarker={{{,}}} foldmethod=marker formatoptions-=tc:
