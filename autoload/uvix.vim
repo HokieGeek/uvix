@@ -3,6 +3,28 @@ if exists("g:autoloaded_uvix") || v:version < 700
 endif
 let g:autoloaded_uvix = 1
 
+function! uvix#init() " {{{
+    " Determine which search tool to use
+    if executable('ag')
+        set grepprg=ag\ --nogroup\ --nocolor\ --column
+        set grepformat="%f:%l:%c:%m"
+        let l:use_external_proc = 1
+    elseif executable('ack')
+        set grepprg=ack\ --nogroup\ ---nocolor\ --column
+        set grepformat="%f:%l:%c:%m"
+        let l:use_external_proc = 1
+    elseif executable('grep')
+        set grepprg=grep\ -rnIH
+        let l:use_external_proc = 1
+    else
+        let l:use_external_proc = 0
+    endif
+
+    let g:uvix_external_grep_cmd = (l:use_external_proc) ? "silent grep" : "noautocmd vimgrep"
+
+    let g:uvix_initialized = 1
+endfunction " }}}
+
 function! uvix#find(case_sensitivity, ...) " {{{
     if a:0 == 1
         let l:loc = "."
@@ -76,5 +98,49 @@ function! uvix#tail(spawn, file) " {{{
     " echomsg "Tail: ".l:cmd." || ".string(l:cfg)
     call splitter#LaunchCommand("", l:cmd, l:cfg)
 endfunction " }}}
+function! uvix#grep(...)
+    if !exists("g:uvix_initialized")
+        call uvix#init()
+    endif
+
+    let l:args = a:000[:]
+    let l:grep_cmd = "vimgrep"
+    let l:path = "%"
+
+    if len(l:args) > 0
+        if a:1 == "-a"
+            let l:grep_cmd = g:uvix_external_grep_cmd
+            if l:grep_cmd =~? "vimgrep"
+                let l:path = "**"
+            elseif l:grep_cmd =~? " grep"
+                let l:path = "*"
+            else
+                let l:path = ""
+            endif
+            let l:args = a:000[1:]
+        elseif a:1 == "-b"
+            let l:grep_cmd = "cexpr [] <bar> bufdo vimgrepadd"
+            let l:args = a:000[1:]
+        endif
+    endif
+
+    let l:expression = (len(l:args) > 0) ? join(l:args, ' ') : expand("<cword>")
+    if strlen(l:expression) > 0
+        if l:grep_cmd =~? "vimgrep"
+            let l:expression = "/".l:expression."/"
+        endif
+
+        silent! execute l:grep_cmd." ".l:expression." ".l:path
+        if empty(getqflist())
+            echomsg "No matches"
+        elseif len(getqflist()) > 1
+            cwindow
+        endif
+    else
+        echohl WarningMsg
+        echomsg "A search term is required"
+        echohl None
+    endif
+endfunction
 
 " vim: set foldmarker={{{,}}} foldmethod=marker formatoptions-=tc:
