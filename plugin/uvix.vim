@@ -9,7 +9,7 @@ cnoremap w!! %!sudo tee > /dev/null %
 command! -bar -bang -complete=file -nargs=+ Find call uvix#find(<bang>0, <f-args>)
 command! -bar -bang -complete=buffer -nargs=* Chmod call uvix#chmod(<bang>0, <f-args>)
 command! -bar -complete=buffer -nargs=? Rm call uvix#remove(<f-args>)
-command! -bar -bang -complete=file -nargs=? Tail call uvix#tail(<bang>1, <q-args>)
+command! -bar -bang -complete=file -nargs=? Tail call uvix#tail(<bang>0, <q-args>)
 command! -nargs=* Grep call uvix#grep(<f-args>)
 
 " vim: set foldmarker={{{,}}} foldmethod=marker formatoptions-=tc:

@@ -92,16 +92,10 @@ function! uvix#tail(spawn, file) " {{{
     endif
 
     let l:cmd = "tail -F ".l:file
-    " if a:spawn
-        " call splitter#LaunchCommandInNewTerminal("", l:cmd)
-    " else
-        " call splitter#LaunchCommandHere(l:cmd, 0)
-    " endif
-    let l:cfg = {'new_terminal': a:spawn, 'split': !a:spawn, 'split_orientation': 'vertical', 'split_size': -1}
-    " echomsg "Tail: ".l:cmd." || ".string(l:cfg)
+    let l:cfg = a:spawn ? 'new_terminal' : 'split_vertical'
     call splitter#LaunchCommand("", l:cmd, l:cfg)
 endfunction " }}}
-function! uvix#grep(...)
+function! uvix#grep(...) " {{{
     let l:args = a:000[:]
     let l:grep_cmd = "vimgrep"
     let l:path = "%"
@@ -155,6 +149,7 @@ function! uvix#grep(...)
         cwindow
     endif
 endfunction
+" }}}
 " }}}
 
 " vim: set foldmarker={{{,}}} foldmethod=marker formatoptions-=tc:
