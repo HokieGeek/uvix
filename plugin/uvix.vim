@@ -12,4 +12,11 @@ command! -bar -complete=buffer -nargs=? Rm call uvix#remove(<f-args>)
 command! -bar -bang -complete=file -nargs=? Tail call uvix#tail(<bang>0, <q-args>)
 command! -nargs=* Grep call uvix#grep(<f-args>)
 
+autocmd BufReadPost quickfix if exists("g:uvix_find_executed")
+       \ | setlocal modifiable
+       \ | silent execute '%s/|\s*//g'
+       \ | setlocal nomodifiable
+       \ | unlet! g:uvix_find_executed
+       \ | endif
+
 " vim: set foldmarker={{{,}}} foldmethod=marker formatoptions-=tc:

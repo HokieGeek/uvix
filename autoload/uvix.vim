@@ -45,10 +45,11 @@ function! uvix#find(case_sensitivity, ...) " {{{
     if exists("l:name")
         let l:case = a:case_sensitivity ? "" : "i"
         let l:files_list = tempname()
-        let l:cmd = "find ".l:loc." -".l:case."name '".l:name."' | xargs file | sed 's/:/:1:/' > ".l:files_list
+        let l:cmd = "find ".l:loc." -".l:case."name '".l:name."' -print > ".l:files_list
         call system(l:cmd)
         let l:ef=&errorformat
-        set errorformat=%f:%l:%m
+        let g:uvix_find_executed = 1
+        setlocal errorformat=%f
         execute "cfile ".l:files_list
         execute "set errorformat=".l:ef
         cwindow
