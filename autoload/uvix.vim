@@ -9,11 +9,11 @@ function! uvix#GetExternalGrepCmd() " {{{
         " Determine which search tool to use
         if executable('ag')
             set grepprg=ag\ --nogroup\ --nocolor\ --column
-            set grepformat="%f:%l:%c:%m"
+            set grepformat=%f:%l:%c:%m
             let l:use_external_proc = 1
         elseif executable('ack')
             set grepprg=ack\ --nogroup\ --nocolor\ --column
-            set grepformat="%f:%l:%c:%m"
+            set grepformat=%f:%l:%c:%m
             let l:use_external_proc = 1
         elseif executable('grep')
             set grepprg=grep\ -rnIH
