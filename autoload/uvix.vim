@@ -102,7 +102,7 @@ function! uvix#grep(...) " {{{
     let l:path = "%"
 
     " Parse out switches from arguments
-    if len(l:args) > 1
+    if len(l:args) >= 1
         if a:1 == "-a"
             let l:grep_cmd = uvix#GetExternalGrepCmd()
             if l:grep_cmd =~? "vimgrep"
