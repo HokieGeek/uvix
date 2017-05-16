@@ -120,7 +120,7 @@ function! uvix#grep(...) " {{{
 
             let l:args = a:000[1:]
         elseif a:1 == "-b"
-            let l:grep_cmd = "cexpr [] <bar> bufdo vimgrepadd"
+            let l:grep_cmd = "cexpr [] | bufdo vimgrepadd"
 
             let l:args = a:000[1:]
         endif
@@ -143,7 +143,10 @@ function! uvix#grep(...) " {{{
     endif
 
     " Execute the search and display the qf list if there is more than 1 hit
-    silent! execute l:grep_cmd." ".l:expression." ".l:path
+    cclose
+    let l:cmd = l:grep_cmd." ".l:expression." ".l:path
+    echomsg l:cmd
+    silent! execute l:cmd
     if empty(getqflist())
         echomsg "No matches"
     elseif len(getqflist()) > 1
